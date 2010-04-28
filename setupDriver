@@ -1,5 +1,7 @@
 #!/bin/bash
 
-/sbin/insmod /home/idlab/testDriverKurtis/testDriver.ko device=02:0C
-mknod /dev/test c 254 0
-mknod /dev/MCP_cPCI c 254 0
+/sbin/insmod /home/rjn/mcpPciDriver/trunk/testDriver.ko device=04:0e
+mknod /dev/test c 253 0
+mknod /dev/MCP_cPCI c 253 0
+chmod a+w /dev/MCP_cPCI 
+
