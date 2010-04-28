@@ -1,0 +1,5 @@
+#!/bin/bash
+
+/sbin/insmod /home/idlab/testDriverKurtis/testDriver.ko device=02:0C
+mknod /dev/test c 254 0
+mknod /dev/MCP_cPCI c 254 0
