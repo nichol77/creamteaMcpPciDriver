@@ -1,6 +1,6 @@
 /*
  *
- * testDriver: testDriver.h
+ * mcpPciDriver: mcpPciDriver.h
  *
  * Main header file. Contains device structure definitions.
  *
@@ -14,7 +14,7 @@
 #include <linux/pci.h>
 #include <linux/cdev.h>
 
-#include "testDriver_ioctl.h"
+#include "mcpPciDriver_ioctl.h"
 #include "testD_dma.h"
 #include "testD_dma_ringbuffer.h"
 
@@ -26,7 +26,7 @@
 
 #define TESTDRIVER_RINGBUFFER_DEPTH 16
 
-struct testDriver_dev {
+struct mcpPciDriver_dev {
   dev_t devno;                        // device number (major/minor chardev)
   struct pci_dev *dev;                // PCI Device Structure
   unsigned int pciSpace[6];           // '1' if space is enabled, '0' if not
@@ -41,14 +41,14 @@ struct testDriver_dev {
 };
 
 // tioD_char.c
-int testDriver_getmajor(void);
-void testDriver_releasemajor(void);
-int testDriver_registerTestCharacterDevice(struct testDriver_dev *dev);
-void testDriver_unregisterTestCharacterDevice(struct testDriver_dev *dev);
+int mcpPciDriver_getmajor(void);
+void mcpPciDriver_releasemajor(void);
+int mcpPciDriver_registerTestCharacterDevice(struct mcpPciDriver_dev *dev);
+void mcpPciDriver_unregisterTestCharacterDevice(struct mcpPciDriver_dev *dev);
 
 // interrupts
-int testDriver_registerInterrupt(struct testDriver_dev *devp);
-void testDriver_unregisterInterrupt(struct testDriver_dev *devp);
+int mcpPciDriver_registerInterrupt(struct mcpPciDriver_dev *devp);
+void mcpPciDriver_unregisterInterrupt(struct mcpPciDriver_dev *devp);
 
 /*
  * DEBUG...

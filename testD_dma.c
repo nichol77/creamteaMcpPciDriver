@@ -3,14 +3,14 @@
 // version.h here to be able to #if the changes
 #include <linux/version.h>
 #include <linux/pci.h>
-#include "testDriver.h"
+#include "mcpPciDriver.h"
 
-unsigned int testDriver_dma_next_segment(unsigned long adr,
+unsigned int mcpPciDriver_dma_next_segment(unsigned long adr,
 					 unsigned int cur_page,
 					 unsigned int n_pages);
-unsigned int testDriver_dma_calc_segments(struct tD_dma *dma);
+unsigned int mcpPciDriver_dma_calc_segments(struct tD_dma *dma);
 
-void testDriver_dma_unmap(struct pci_dev *dev, struct tD_dma *dma)
+void mcpPciDriver_dma_unmap(struct pci_dev *dev, struct tD_dma *dma)
 {
   if (dma->dma_sglist_buffer) {
     dma_unmap_single(&dev->dev,
@@ -26,23 +26,23 @@ void testDriver_dma_unmap(struct pci_dev *dev, struct tD_dma *dma)
   }
 }
 
-void testDriver_dma_finish(struct tD_dma *dma)
+void mcpPciDriver_dma_finish(struct tD_dma *dma)
 {
   if (dma->dma_sglist_buffer) {
-    DEBUG("testDriver_dma_finish: freeing dma_sglist_buffer: %8.8X\n",
+    DEBUG("mcpPciDriver_dma_finish: freeing dma_sglist_buffer: %8.8X\n",
 	  (unsigned int) dma->dma_sglist_buffer);
     kfree(dma->dma_sglist_buffer);
     dma->dma_sglist_buffer = 0;
   }
   if (dma->sglist) {
-    DEBUG("testDriver_dma_finish: freeing sglist: %8.8X\n",
+    DEBUG("mcpPciDriver_dma_finish: freeing sglist: %8.8X\n",
 	  (unsigned int) dma->sglist);
     vfree(dma->sglist);
     dma->sglist = 0;
   }
 }
 
-int testDriver_dma_init(struct tD_dma *dma) 
+int mcpPciDriver_dma_init(struct tD_dma *dma) 
 {
   unsigned int n_pages;
   unsigned int cur_page;
@@ -54,17 +54,17 @@ int testDriver_dma_init(struct tD_dma *dma)
   dma->dma_address = 0;
   dma->n_dma_segments = 0;
    
-  dma->n_segments = testDriver_dma_calc_segments(dma);
+  dma->n_segments = mcpPciDriver_dma_calc_segments(dma);
   if (!dma->n_segments) {
-     printk(KERN_ERR "testDriver: cannot initialize 0-byte DMA buffer\n");
+     printk(KERN_ERR "mcpPciDriver: cannot initialize 0-byte DMA buffer\n");
      return -EFAULT;
   }
   dma->sglist = vmalloc(dma->n_segments*sizeof(*(dma->sglist)));
   if (!dma->sglist) {
-     printk(KERN_ERR "testDriver: unable to allocate sglist buffer\n");
+     printk(KERN_ERR "mcpPciDriver: unable to allocate sglist buffer\n");
      return -ENOMEM;
   }
-  DEBUG("testDriver_dma_init: allocated sglist buffer: %8.8X\n",
+  DEBUG("mcpPciDriver_dma_init: allocated sglist buffer: %8.8X\n",
 	(unsigned int) dma->sglist);
   // OK, we've got an sglist buffer
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,24)  
@@ -77,13 +77,13 @@ int testDriver_dma_init(struct tD_dma *dma)
 
   // Set up the sglist
   n_pages = (dma->buf_size) >> PAGE_SHIFT;
-  DEBUG("testDriver: buffer is at logical address %8.8X\n", dma->dma_buffer);
-  DEBUG("testDriver: %d pages in %d segments\n", n_pages, dma->n_segments);
+  DEBUG("mcpPciDriver: buffer is at logical address %8.8X\n", dma->dma_buffer);
+  DEBUG("mcpPciDriver: %d pages in %d segments\n", n_pages, dma->n_segments);
 
   va = (unsigned long) dma->dma_buffer;
   cur_page = 0;
   cur_segment = 0;
-  while ((next_page = testDriver_dma_next_segment(va, cur_page, n_pages))
+  while ((next_page = mcpPciDriver_dma_next_segment(va, cur_page, n_pages))
 	 != n_pages) {
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,24)  
@@ -115,7 +115,7 @@ int testDriver_dma_init(struct tD_dma *dma)
   return 0;
 }
 
-int testDriver_dma_map(struct pci_dev *dev, struct tD_dma *dma) {
+int mcpPciDriver_dma_map(struct pci_dev *dev, struct tD_dma *dma) {
   unsigned int *p;
   unsigned int lenflags;
   unsigned int sgaddr;
@@ -130,14 +130,14 @@ int testDriver_dma_map(struct pci_dev *dev, struct tD_dma *dma) {
   dma->dma_sglist_buffer = 
     kmalloc(dma->n_dma_segments*(sizeof(unsigned int)*2), GFP_DMA);
   if (!dma->dma_sglist_buffer) {
-    printk(KERN_ERR "testDriver: unable to allocate sglist hwbuffer\n");
+    printk(KERN_ERR "mcpPciDriver: unable to allocate sglist hwbuffer\n");
      pci_unmap_sg(dev,
 		 dma->sglist,
 		 dma->n_segments,
 		 PCI_DMA_FROMDEVICE);
     return -1;
   }
-  DEBUG("testDriver_dma_map: allocated dma_sglist_buffer: %8.8X\n",
+  DEBUG("mcpPciDriver_dma_map: allocated dma_sglist_buffer: %8.8X\n",
 	dma->dma_sglist_buffer);
   memset(dma->dma_sglist_buffer, 
 	 0, 
@@ -169,7 +169,7 @@ int testDriver_dma_map(struct pci_dev *dev, struct tD_dma *dma) {
 
 // will return n_pages if there is no next segment
 // if call with cur_page = 0, n_pages = 1, loop doesn't enter
-unsigned int testDriver_dma_next_segment(unsigned long adr_start,
+unsigned int mcpPciDriver_dma_next_segment(unsigned long adr_start,
 					 unsigned int cur_page,
 					 unsigned int n_pages) {
   unsigned int i;
@@ -191,7 +191,7 @@ unsigned int testDriver_dma_next_segment(unsigned long adr_start,
   return n_pages;
 }
 
-unsigned int testDriver_dma_calc_segments(struct tD_dma *dma) {
+unsigned int mcpPciDriver_dma_calc_segments(struct tD_dma *dma) {
   unsigned int n_segments;
   unsigned int n_pages = (dma->buf_size) >> PAGE_SHIFT;
   unsigned long va;
@@ -200,7 +200,7 @@ unsigned int testDriver_dma_calc_segments(struct tD_dma *dma) {
   va = (unsigned long) dma->dma_buffer;
   cur_page = 0;
   n_segments = 0;
-  while ((next_page = testDriver_dma_next_segment(va, cur_page, n_pages))
+  while ((next_page = mcpPciDriver_dma_next_segment(va, cur_page, n_pages))
 	 != n_pages) {
     n_segments++;
     cur_page = next_page;

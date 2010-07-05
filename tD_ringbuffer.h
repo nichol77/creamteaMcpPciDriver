@@ -17,17 +17,17 @@ struct tD_ring {
   unsigned int first;
 };
 
-int testDriver_initRing(struct tD_ring *rp,
+int mcpPciDriver_initRing(struct tD_ring *rp,
 			unsigned int depth);
 
-int testDriver_fastRingEmpty(struct tD_ring *rp);
+int mcpPciDriver_fastRingEmpty(struct tD_ring *rp);
 
-void testDriver_deleteRing(struct tD_ring *rp);
+void mcpPciDriver_deleteRing(struct tD_ring *rp);
 
-void testDriver_takeFromRing(struct tD_ring *rp,
+void mcpPciDriver_takeFromRing(struct tD_ring *rp,
 			     struct tD_ringbuf *buf);
 
-void testDriver_addToRing(struct tD_ring *rp, 
+void mcpPciDriver_addToRing(struct tD_ring *rp, 
 			  unsigned int *buffer, 
 			  unsigned int size);
 #endif

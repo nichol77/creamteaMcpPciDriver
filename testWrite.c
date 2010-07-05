@@ -7,9 +7,9 @@ int main() {
   unsigned int command[4] = {0x1,0x1,0x1,0x1};
   int fd;
 
-  fd = open("/dev/test", O_RDWR);
+  fd = open("/dev/MCP_cPCI", O_RDWR);
   if (fd < 0) {perror("open"); exit(1);}
-  if (write(fd, command, sizeof(unsigned int)*4) < 0) {
+  if (write(fd, command, sizeof(unsigned int)) < 0) {
     perror("write"); close(fd); exit(1);
   }
   close(fd);

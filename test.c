@@ -1,10 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
-#include "testDriver_ioctl.h"
+#include "mcpPciDriver_ioctl.h"
 
 int main(int argc, char **argv) {
-  struct testDriverRead req;
+  struct mcpPciDriverRead req;
   int testfd;
   unsigned char cmd;
   

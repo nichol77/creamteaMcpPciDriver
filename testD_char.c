@@ -1,8 +1,8 @@
 /*
  *
- * testDriver: tioD_char.c
+ * mcpPciDriver: tioD_char.c
  *
- * testDriver character interface.
+ * mcpPciDriver character interface.
  *
  * PSA v1.0 04/17/08
  */
@@ -19,78 +19,78 @@
 #include <asm/msr.h>
 #include <asm/uaccess.h>
 #include <linux/delay.h>
-#include "testDriver.h"
+#include "mcpPciDriver.h"
 #include "mcp_register_map.h"
 
 #define VERBOSE_DEBUG 0
 
-static int testDriver_major;
+static int mcpPciDriver_major;
 
-static int testDriver_open(struct inode *iptr, struct file *filp);
-static int testDriver_release(struct inode *iptr, struct file *filp);
-static ssize_t testDriver_read(struct file *filp, char __user *buff,
+static int mcpPciDriver_open(struct inode *iptr, struct file *filp);
+static int mcpPciDriver_release(struct inode *iptr, struct file *filp);
+static ssize_t mcpPciDriver_read(struct file *filp, char __user *buff,
 			size_t count, loff_t *offp);
-static ssize_t testDriver_write(struct file *filp, const char __user *buff,
+static ssize_t mcpPciDriver_write(struct file *filp, const char __user *buff,
 			size_t count, loff_t *offp);
-static int testDriver_ioctl(struct inode *iptr, struct file *filp,
+static int mcpPciDriver_ioctl(struct inode *iptr, struct file *filp,
 		      unsigned int cmd, unsigned long arg);
 
 
-static struct file_operations testDriver_fops = {
+static struct file_operations mcpPciDriver_fops = {
   .owner = THIS_MODULE,
-  .read = testDriver_read,
-  .write = testDriver_write,
-  .ioctl = testDriver_ioctl,
-  .open = testDriver_open,
-  .release = testDriver_release,
+  .read = mcpPciDriver_read,
+  .write = mcpPciDriver_write,
+  .ioctl = mcpPciDriver_ioctl,
+  .open = mcpPciDriver_open,
+  .release = mcpPciDriver_release,
 };
 
-void __exit testDriver_releasemajor(void) {
+void __exit mcpPciDriver_releasemajor(void) {
    dev_t dev;
-   if (!testDriver_major) return;
-   dev = MKDEV(testDriver_major, 0);
+   if (!mcpPciDriver_major) return;
+   dev = MKDEV(mcpPciDriver_major, 0);
    unregister_chrdev_region(dev, 1);
 }
 
 
-int __init testDriver_getmajor(void) {
+int __init mcpPciDriver_getmajor(void) {
   int result;
   dev_t dev;
 
-  if (testDriver_major) {
-    dev = MKDEV(testDriver_major, 0);
-    result = register_chrdev_region(dev, 1, "testDriver");
+  if (mcpPciDriver_major) {
+    dev = MKDEV(mcpPciDriver_major, 0);
+    result = register_chrdev_region(dev, 1, "mcpPciDriver");
   } else {
-    result = alloc_chrdev_region(&dev, 0, 1, "testDriver");
-    testDriver_major = MAJOR(dev);
+    result = alloc_chrdev_region(&dev, 0, 1, "mcpPciDriver");
+    mcpPciDriver_major = MAJOR(dev);
   }
   if (result < 0) {
-    printk(KERN_WARNING "testDriver: can't get major %d\n",
-	   testDriver_major);
+    printk(KERN_WARNING "mcpPciDriver: can't get major %d\n",
+	   mcpPciDriver_major);
     return result;
   }
-  DEBUG("testDriver: got major number %d\n", testDriver_major);
+  DEBUG("mcpPciDriver: got major number %d\n", mcpPciDriver_major);
   return 0;
 }
 
-int testDriver_registerTestCharacterDevice(struct testDriver_dev *dev)
+int mcpPciDriver_registerTestCharacterDevice(struct mcpPciDriver_dev *dev)
 {
   int err=0;
-  dev_t devno = MKDEV(testDriver_major, 0);
+  dev_t devno = MKDEV(mcpPciDriver_major, 0);
 
-  DEBUG("testDriver_registerTestCharacterDevice: adding /dev/test\n");
-  cdev_init(&dev->cdev, &testDriver_fops);
+  DEBUG("mcpPciDriver_registerTestCharacterDevice: adding /dev/MCP_cPCI\n");
+  cdev_init(&dev->cdev, &mcpPciDriver_fops);
   dev->cdev.owner = THIS_MODULE;
-  //  dev->cdev.ops = &testDriver_fops;
+  //  dev->cdev.ops = &mcpPciDriver_fops;
   dev->devno = devno;
   err = cdev_add(&dev->cdev, devno, 1);
   if (err)
-    printk(KERN_NOTICE "testDriver: error %d adding /dev/test", err);
+    printk(KERN_NOTICE "mcpPciDriver: error %d adding /dev/MCP_cPCI", err);
 
   return err;
 }
 
-void testDriver_unregisterTestCharacterDevice(struct testDriver_dev *dev) {
+void mcpPciDriver_unregisterTestCharacterDevice(struct mcpPciDriver_dev *dev) {
   cdev_del(&dev->cdev);
 }
 
@@ -98,21 +98,21 @@ void testDriver_unregisterTestCharacterDevice(struct testDriver_dev *dev) {
  *  THE FOPS FUNCTIONS
  *
  *  These are the file operations (fops) functions which lock the TEST:
- *     testDriver_ioctl
- *     testDriver_read
- *     testDriver_write
+ *     mcpPciDriver_ioctl
+ *     mcpPciDriver_read
+ *     mcpPciDriver_write
  *  These do not:
- *     testDriver_open
- *     testDriver_release
+ *     mcpPciDriver_open
+ *     mcpPciDriver_release
  */
-static int testDriver_open(struct inode *iptr, struct file *filp)
+static int mcpPciDriver_open(struct inode *iptr, struct file *filp)
 {
   /*
-   * Get the testDriver_dev pointer by bouncing out
+   * Get the mcpPciDriver_dev pointer by bouncing out
    * of the cdev structure.
    */
-  struct testDriver_dev *devp = container_of(iptr->i_cdev,
-					     struct testDriver_dev,
+  struct mcpPciDriver_dev *devp = container_of(iptr->i_cdev,
+					     struct mcpPciDriver_dev,
 					     cdev);
   /*
    * Store it for easier access.
@@ -121,10 +121,10 @@ static int testDriver_open(struct inode *iptr, struct file *filp)
   /*
    * Do we need to do anything here?
    */ 
-  DEBUG("testDriver_open: /dev/test opened\n");
+  DEBUG("mcpPciDriver_open: /dev/MCP_cPCI opened\n");
   return 0;
 }
-static int testDriver_release(struct inode *inode, struct file *filp)
+static int mcpPciDriver_release(struct inode *inode, struct file *filp)
 {
   /*
    * uh, I don't care
@@ -132,9 +132,9 @@ static int testDriver_release(struct inode *inode, struct file *filp)
   return 0;
 }
 
-static ssize_t testDriver_read(struct file *filp, char __user *buff,
+static ssize_t mcpPciDriver_read(struct file *filp, char __user *buff,
 			size_t count, loff_t *offp) {
-  struct testDriver_dev *devp = filp->private_data;
+  struct mcpPciDriver_dev *devp = filp->private_data;
   struct tD_ringbuf curbuf;
   struct tD_ringbuf *rbuf;
   struct tD_dma dma;
@@ -147,7 +147,7 @@ static ssize_t testDriver_read(struct file *filp, char __user *buff,
   int retval;
 
   if (VERBOSE_DEBUG) {
-    DEBUG("Called testDriver_read\n");
+    DEBUG("Called mcpPciDriver_read\n");
     DEBUG("Current semaphore count: %i\n",atomic_read(&devp->sema.count));
   }
 
@@ -174,11 +174,11 @@ static ssize_t testDriver_read(struct file *filp, char __user *buff,
   dma.dma_buffer = vmalloc_32(devp->dmabuf_size);
   dma.buf_size = devp->dmabuf_size;
   if (!dma.dma_buffer) {
-    printk(KERN_ERR "testDriver: unable to allocate replacement DMA buffer\n");
+    printk(KERN_ERR "mcpPciDriver: unable to allocate replacement DMA buffer\n");
     return -ENOMEM;
   }
-  if (testDriver_dma_init(&dma)) {
-    printk(KERN_ERR "testDriver: error initializing replacement DMA buffer\n");
+  if (mcpPciDriver_dma_init(&dma)) {
+    printk(KERN_ERR "mcpPciDriver: error initializing replacement DMA buffer\n");
     return -ENOMEM;
   }
 
@@ -190,29 +190,29 @@ static ssize_t testDriver_read(struct file *filp, char __user *buff,
     spin_unlock_irqrestore(&devp->ring.lock, flags);
     up(&devp->sema);
     if (filp->f_flags & O_NONBLOCK) {
-      testDriver_dma_finish(&dma);
+      mcpPciDriver_dma_finish(&dma);
       vfree(dma.dma_buffer);
       if (VERBOSE_DEBUG)
         DEBUG("Returning EAGAIN on line 189\n");
       return -EAGAIN;
     }
-    DEBUG("testDriver: sleeping\n");
+    DEBUG("mcpPciDriver: sleeping\n");
     if (wait_event_interruptible(devp->waiting_on_read, 
 				 !testD_dmarb_fastRingEmpty(&devp->ring))) {
-      testDriver_dma_finish(&dma);
+      mcpPciDriver_dma_finish(&dma);
       vfree(dma.dma_buffer);
       return -ERESTARTSYS;
     }
     if (filp->f_flags & O_NONBLOCK) {
       if (down_trylock(&devp->sema)) {
-	testDriver_dma_finish(&dma);
+	mcpPciDriver_dma_finish(&dma);
 	vfree(dma.dma_buffer);
         if (VERBOSE_DEBUG)
        	  DEBUG("Returning EAGAIN on line 203\n");
 	return -EAGAIN;
       }
     } else if (down_interruptible(&devp->sema)) {
-      testDriver_dma_finish(&dma);
+      mcpPciDriver_dma_finish(&dma);
       vfree(dma.dma_buffer);
       return -ERESTARTSYS;
     }
@@ -231,10 +231,10 @@ static ssize_t testDriver_read(struct file *filp, char __user *buff,
   spin_unlock_irqrestore(&devp->ring.lock, flags);
    
   // curbuf.size is in bytes
-  DEBUG("testDriver: buffer is %d bytes\n", curbuf.size);
+  DEBUG("mcpPciDriver: buffer is %d bytes\n", curbuf.size);
 
   // Whew, all that bloody work, but we've got the buffer!
-  testDriver_dma_finish(&curbuf.dma);
+  mcpPciDriver_dma_finish(&curbuf.dma);
 
   // MCP copying function
   p = (unsigned int *) curbuf.dma.dma_buffer;
@@ -244,13 +244,13 @@ static ssize_t testDriver_read(struct file *filp, char __user *buff,
   }
   */
   if (curbuf.size < 4) {
-    printk(KERN_WARNING "testDriver: buffer is far too small?\n");
+    printk(KERN_WARNING "mcpPciDriver: buffer is far too small?\n");
     vfree(curbuf.dma.dma_buffer);
     up(&devp->sema);
     return -EIO;
   }
   if (p[0] != 0x12341234) {
-    printk(KERN_WARNING "testDriver: improper header (%4.4X %4.4X)\n",
+    printk(KERN_WARNING "mcpPciDriver: improper header (%4.4X %4.4X)\n",
 	   p[0] & 0xFFFF,(p[0] & 0xFFFF0000 >> 16));
     vfree(curbuf.dma.dma_buffer);
     up(&devp->sema);
@@ -293,7 +293,7 @@ static ssize_t testDriver_read(struct file *filp, char __user *buff,
       return nbytes;
     }
     if (nbytes+sizeof(unsigned int) > count) {
-      printk(KERN_WARNING "testDriver: warning - user buffer too small\n");
+      printk(KERN_WARNING "mcpPciDriver: warning - user buffer too small\n");
       vfree(curbuf.dma.dma_buffer);
       up(&devp->sema);
       return nbytes;
@@ -305,7 +305,7 @@ static ssize_t testDriver_read(struct file *filp, char __user *buff,
   if (count < curbuf.size) {
     // too small...!
     // fix this later
-    DEBUG("testDriver: buffer too small\n");
+    DEBUG("mcpPciDriver: buffer too small\n");
     if (copy_to_user(buff, curbuf.dma.dma_buffer, count)) {
       vfree(curbuf.dma.dma_buffer);
       up(&devp->sema);
@@ -325,35 +325,35 @@ static ssize_t testDriver_read(struct file *filp, char __user *buff,
   }
   */
   // no kfree-ing
-  printk(KERN_WARNING "testDriver: warning - no trailer seen\n");
+  printk(KERN_WARNING "mcpPciDriver: warning - no trailer seen\n");
   vfree(curbuf.dma.dma_buffer);
   up(&devp->sema);
   return nbytes;
 }
       
-static ssize_t testDriver_write(struct file *filp, const char __user *buff,
+static ssize_t mcpPciDriver_write(struct file *filp, const char __user *buff,
 			 size_t count, loff_t *offp) {
-  struct testDriver_dev *devp = filp->private_data;
+  struct mcpPciDriver_dev *devp = filp->private_data;
   volatile unsigned int *cmdptr = BLK_MCP(devp->pciBase[1], BLK_MCP_COMMAND);
   unsigned int command;
   int i;
 
   if (VERBOSE_DEBUG) {
-    DEBUG("Called testDriver_write\n");
+    DEBUG("Called mcpPciDriver_write\n");
     DEBUG("Current semaphore count: %i\n",atomic_read(&devp->sema.count));
   }
 
-  DEBUG("testDriver_write: %d bytes\n", count);
+  DEBUG("mcpPciDriver_write: %d bytes\n", count);
   if (count & 0x3) {
     // WTF, I only want integers)
-    printk(KERN_ERR "testDriver: writes should be integer-length only\n");
+    printk(KERN_ERR "mcpPciDriver: writes should be integer-length only\n");
     return -EFAULT;
   }
   for (i=0;i<(count >> 2);i++) {
     if (get_user(command, buff) < 0)
       return -EFAULT;
     buff += sizeof(unsigned int);
-    DEBUG("testDriver: cmd %8.8X\n", command);
+    DEBUG("mcpPciDriver: cmd %8.8X\n", command);
     writel(command, cmdptr);
   }
 
@@ -367,21 +367,21 @@ static ssize_t testDriver_write(struct file *filp, const char __user *buff,
  *
  */
 
-static int testDriver_ioctl(struct inode *iptr, struct file *filp,
+static int mcpPciDriver_ioctl(struct inode *iptr, struct file *filp,
 			     unsigned int cmd, unsigned long arg)
 {
 
   int err = 0;
   unsigned int gpioval;
-  struct testDriverRead req;
+  struct mcpPciDriverRead req;
 
   /*
-   * Get testDriver_dev pointer.
+   * Get mcpPciDriver_dev pointer.
    */
-  struct testDriver_dev *devp = filp->private_data;
+  struct mcpPciDriver_dev *devp = filp->private_data;
 
   if (VERBOSE_DEBUG) {
-    DEBUG("Called testDriver_ioctl\n");
+    DEBUG("Called mcpPciDriver_ioctl\n");
     DEBUG("Current semaphore count: %i\n",atomic_read(&devp->sema.count));
   }
 
@@ -395,7 +395,7 @@ static int testDriver_ioctl(struct inode *iptr, struct file *filp,
   if (err) return -EFAULT;
 
   if (!devp) {
-    printk(KERN_ERR "testDriver: no testDriver_dev pointer?\n");
+    printk(KERN_ERR "mcpPciDriver: no mcpPciDriver_dev pointer?\n");
     return -EFAULT;
   }
   
@@ -416,7 +416,7 @@ static int testDriver_ioctl(struct inode *iptr, struct file *filp,
   switch (cmd) {  
       case TEST_IOCREAD:
 	if (copy_from_user(&req, (void __user *) arg,
-			   sizeof(struct testDriverRead))) {
+			   sizeof(struct mcpPciDriverRead))) {
 	  up(&devp->sema);
 	  return -EFAULT;
 	}
@@ -428,17 +428,17 @@ static int testDriver_ioctl(struct inode *iptr, struct file *filp,
 	  up(&devp->sema);
 	  return -ENOTTY;
 	}
-//	DEBUG("testDriver: read from %8.8X, BAR%d\n",
+//	DEBUG("mcpPciDriver: read from %8.8X, BAR%d\n",
 //	      req.address, req.barno);
 	req.value = readl(devp->pciBase[req.barno]+req.address);
-	if (copy_to_user((void __user *) arg, &req, sizeof(struct testDriverRead))) {
+	if (copy_to_user((void __user *) arg, &req, sizeof(struct mcpPciDriverRead))) {
 	  up(&devp->sema);
 	  return -EFAULT;
 	}
 	break;
       case TEST_IOCWRITE:
 	if (copy_from_user(&req, (void __user *) arg,
-			   sizeof(struct testDriverRead))) {
+			   sizeof(struct mcpPciDriverRead))) {
 	  up(&devp->sema);
 	  return -EFAULT;
 	}
@@ -450,7 +450,7 @@ static int testDriver_ioctl(struct inode *iptr, struct file *filp,
 	  up(&devp->sema);
 	  return -ENOTTY;
 	}
-	DEBUG("testDriver: write %8.8X to %8.8X, BAR%d\n",
+	DEBUG("mcpPciDriver: write %8.8X to %8.8X, BAR%d\n",
 	      req.value, req.address, req.barno);
 	writel(req.value, devp->pciBase[req.barno]+req.address);
 	// DO NOT READ BACK HERE!!!
@@ -459,7 +459,7 @@ static int testDriver_ioctl(struct inode *iptr, struct file *filp,
 	// If the user wants to read back, they should just do another
 	// ioctl call.
 	//	req.value = readl(devp->pciBase[req.barno]+req.address);
-	if (copy_to_user((void __user *) arg, &req, sizeof(struct testDriverRead))) {
+	if (copy_to_user((void __user *) arg, &req, sizeof(struct mcpPciDriverRead))) {
 	  up(&devp->sema);
 	  return -EFAULT;
 	}

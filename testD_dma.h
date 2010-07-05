@@ -12,8 +12,8 @@ struct tD_dma
   size_t buf_size;
 };
 
-void testDriver_dma_finish(struct tD_dma *dma);
-int testDriver_dma_init(struct tD_dma *dma);
-int testDriver_dma_map(struct pci_dev *dev, struct tD_dma *dma);
-void testDriver_dma_unmap(struct pci_dev *dev, struct tD_dma *dma);
+void mcpPciDriver_dma_finish(struct tD_dma *dma);
+int mcpPciDriver_dma_init(struct tD_dma *dma);
+int mcpPciDriver_dma_map(struct pci_dev *dev, struct tD_dma *dma);
+void mcpPciDriver_dma_unmap(struct pci_dev *dev, struct tD_dma *dma);
 #endif

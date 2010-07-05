@@ -2,9 +2,9 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <errno.h>
-#include "testDriver_ioctl.h"
+#include "mcpPciDriver_ioctl.h"
 int main() {
-  struct testDriverRead req;
+  struct mcpPciDriverRead req;
   int tfd;
   int val;
 

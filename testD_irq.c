@@ -1,7 +1,7 @@
 
 /*
  *
- * testDriver interrupt functions. Works with the 'standard' ISR block layout.
+ * mcpPciDriver interrupt functions. Works with the 'standard' ISR block layout.
  *
  */
 
@@ -52,13 +52,13 @@
 #define IRQF_DISABLED 0x00000020
 #define IRQF_SHARED 0x00000080
 
-#include "testDriver.h"
+#include "mcpPciDriver.h"
 
-irqreturn_t testDriver_interruptHandler(unsigned int irq,
+irqreturn_t mcpPciDriver_interruptHandler(unsigned int irq,
 					void *dev_id,
 					struct pt_regs *regs);
 
-void testDriver_unregisterInterrupt(struct testDriver_dev *devp) {
+void mcpPciDriver_unregisterInterrupt(struct mcpPciDriver_dev *devp) {
   volatile unsigned int *oc_intcsr = (unsigned int *)
     devp->pciBase[0] + OPENCORES_PCI_INTCR;
    volatile unsigned int *intcsr = (unsigned int *)
@@ -81,7 +81,7 @@ void testDriver_unregisterInterrupt(struct testDriver_dev *devp) {
   free_irq(devp->dev->irq, devp);
 }
 
-int testDriver_registerInterrupt(struct testDriver_dev *devp) {
+int mcpPciDriver_registerInterrupt(struct mcpPciDriver_dev *devp) {
   unsigned int interruptNumber = 0;
   volatile unsigned int *oc_intcsr = (unsigned int *)
     devp->pciBase[0] + OPENCORES_PCI_INTCR;
@@ -95,15 +95,15 @@ int testDriver_registerInterrupt(struct testDriver_dev *devp) {
   }
 
   interruptNumber = devp->dev->irq;
-  DEBUG("testDriver: taking IRQ%d\n", interruptNumber);
+  DEBUG("mcpPciDriver: taking IRQ%d\n", interruptNumber);
   
   result = request_irq(interruptNumber,
-		       testDriver_interruptHandler,
+		       mcpPciDriver_interruptHandler,
 		       IRQF_SHARED | IRQF_DISABLED,
-		       "testDriver",
+		       "mcpPciDriver",
 		       devp);
   if (result < 0) {
-    printk(KERN_ERR "testDriver: error %d registering interrupt handler\n",
+    printk(KERN_ERR "mcpPciDriver: error %d registering interrupt handler\n",
 	   result);
     return result;
   }
@@ -117,30 +117,30 @@ int testDriver_registerInterrupt(struct testDriver_dev *devp) {
   return 0;
 }
 
-irqreturn_t testDriver_interruptHandler(unsigned int irq,
+irqreturn_t mcpPciDriver_interruptHandler(unsigned int irq,
 					void *dev_id,
 					struct pt_regs *regs) {
-  struct testDriver_dev *devp = (struct testDriver_dev *) dev_id;
+  struct mcpPciDriver_dev *devp = (struct mcpPciDriver_dev *) dev_id;
   volatile unsigned int *intcsr = (unsigned int *)
     devp->pciBase[1] + TEST_INTCSR;
   unsigned int val;
   static cycles_t cc = 0;
   cycles_t dt;
 
-  DEBUG("testD_irq.c: testDriver_interruptHandler called!\n"); //Kurtis
+  DEBUG("testD_irq.c: mcpPciDriver_interruptHandler called!\n"); //Kurtis
 
   val = readl(intcsr);
   if (!(val & TEST_INTCSR_ACTIVE)) {
     return IRQ_NONE;
   }
   // Clear all interrupts.
-  DEBUG("testD_irq.c: interrupt cleared in testDriver_interruptHandler\n"); //Kurtis
+  DEBUG("testD_irq.c: interrupt cleared in mcpPciDriver_interruptHandler\n"); //Kurtis
   writel(val, intcsr);
   // Handle interrupt
   if (val & TEST_INTCSR_IRQ0) {
-    //    DEBUG("testDriver: local IRQ0\n");
+    //    DEBUG("mcpPciDriver: local IRQ0\n");
     //dt = get_cycles();
-    //    DEBUG("testDriver: %llu cycles\n", dt-cc);
+    //    DEBUG("mcpPciDriver: %llu cycles\n", dt-cc);
     //cc = dt;
     //    do nothing
   }
@@ -160,13 +160,13 @@ irqreturn_t testDriver_interruptHandler(unsigned int irq,
       devp->pciBase[1] + TEST_DMALEN;
     unsigned int dma_status;
 
-    DEBUG("testDriver: local IRQ1\n");
+    DEBUG("mcpPciDriver: local IRQ1\n");
 
     // Unmap the buffer.
-    testDriver_dma_unmap(devp->dev, &devp->dmaringbuf->dma);
+    mcpPciDriver_dma_unmap(devp->dev, &devp->dmaringbuf->dma);
     dma_status = readl(dmasr);
     if (dma_status & 0xF) {
-      printk(KERN_ERR "testDriver: DMA transfer failed (eflag %X)\n",
+      printk(KERN_ERR "mcpPciDriver: DMA transfer failed (eflag %X)\n",
 	     dma_status & 0xF);
       // buffer is not full
     } else {
@@ -177,7 +177,7 @@ irqreturn_t testDriver_interruptHandler(unsigned int irq,
       testD_dmarb_setBufferFull(devp->dmaringbuf);
       spin_unlock_irq(&devp->ring.lock);
       dt = get_cycles();
-      DEBUG("testDriver: %llu cycles\n", dt-cc);
+      DEBUG("mcpPciDriver: %llu cycles\n", dt-cc);
       wake_up_interruptible(&devp->waiting_on_read);
     }
   }
@@ -197,13 +197,13 @@ irqreturn_t testDriver_interruptHandler(unsigned int irq,
     //
     // Data is ready...
     // 
-    DEBUG("testDriver: local IRQ2\n");
+    DEBUG("mcpPciDriver: local IRQ2\n");
     cc = get_cycles();
     // Check that DMA is not currently in progress before we
     // do anything.
     dma_status = readl(dmasr);
     if (dma_status & 0x80) {
-      DEBUG("testDriver: LIRQ2 (DATA_READY) but DMA in progress?\n");
+      DEBUG("mcpPciDriver: LIRQ2 (DATA_READY) but DMA in progress?\n");
     } else {
       unsigned int nb_tx;
       nb_tx = readl(txlen);
@@ -215,19 +215,19 @@ irqreturn_t testDriver_interruptHandler(unsigned int irq,
       spin_unlock_irq(&devp->ring.lock);
       if (!devp->dmaringbuf) {
 	printk(KERN_ERR 
-	       "testDriver: testD_dmarb_getAvailableBuffer returned NULL!");
+	       "mcpPciDriver: testD_dmarb_getAvailableBuffer returned NULL!");
       } else {
-	DEBUG("testDriver: DMA of %d words requested\n", nb_tx);
+	DEBUG("mcpPciDriver: DMA of %d words requested\n", nb_tx);
 	if (nb_tx & 0x1) devp->dmaringbuf->dma.dma_size = (nb_tx >> 1) + 1;
 	else devp->dmaringbuf->dma.dma_size = (nb_tx >> 1);
 	// The buffer's page aligned in size.
 	// The DMA transfer doesn't have to be: it'll just stop early.
-	DEBUG("testDriver: actually doing DMA of %d ints\n",
+	DEBUG("mcpPciDriver: actually doing DMA of %d ints\n",
 	      devp->dmaringbuf->dma.dma_size);
 
 	// Map the DMA buffer...
-	testDriver_dma_map(devp->dev, &devp->dmaringbuf->dma);
-	DEBUG("testDriver: dma_address is 0x%X\n", 
+	mcpPciDriver_dma_map(devp->dev, &devp->dmaringbuf->dma);
+	DEBUG("mcpPciDriver: dma_address is 0x%X\n", 
 	      devp->dmaringbuf->dma.dma_address);
 	writel(devp->dmaringbuf->dma.dma_address, dmaadr);
 	writel(devp->dmaringbuf->dma.dma_size, dmalen);
@@ -237,19 +237,19 @@ irqreturn_t testDriver_interruptHandler(unsigned int irq,
     }
   }
  if (val & TEST_INTCSR_IRQ3) {
-    DEBUG("testDriver: local IRQ3\n");
+    DEBUG("mcpPciDriver: local IRQ3\n");
   }
   if (val & TEST_INTCSR_IRQ4) {
-    DEBUG("testDriver: local IRQ4\n");
+    DEBUG("mcpPciDriver: local IRQ4\n");
   }
   if (val & TEST_INTCSR_IRQ5) {
-    DEBUG("testDriver: local IRQ5\n");
+    DEBUG("mcpPciDriver: local IRQ5\n");
   }
   if (val & TEST_INTCSR_IRQ6) {
-    DEBUG("testDriver: local IRQ6\n");
+    DEBUG("mcpPciDriver: local IRQ6\n");
   }
   if (val & TEST_INTCSR_IRQ7) {
-    DEBUG("testDriver: local IRQ7\n");
+    DEBUG("mcpPciDriver: local IRQ7\n");
   }
 //  writel(val, intcsr);
 //  val = readl(intcsr);

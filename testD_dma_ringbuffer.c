@@ -2,7 +2,7 @@
 #include <linux/spinlock.h>
 #include <linux/slab.h>
 #include <linux/pci.h>
-#include "testDriver.h"
+#include "mcpPciDriver.h"
 #include "testD_dma.h"
 #include "testD_dma_ringbuffer.h"
 
@@ -37,10 +37,10 @@ int testD_dmarb_initRing(struct tD_ring *rp,
     rp->ring[i].dma.dma_buffer = vmalloc_32(size);
     rp->ring[i].dma.buf_size = size;
     if (!rp->ring[i].dma.dma_buffer) {
-      printk(KERN_ERR "testDriver: unable to allocate DMA buffer #%d\n", i);
+      printk(KERN_ERR "mcpPciDriver: unable to allocate DMA buffer #%d\n", i);
       return -ENOMEM;
     }
-    if (testDriver_dma_init(&rp->ring[i].dma))
+    if (mcpPciDriver_dma_init(&rp->ring[i].dma))
       return -ENOMEM;
   }
       
@@ -51,12 +51,12 @@ void testD_dmarb_deleteRing(struct tD_ring *rp) {
   int i;
 
   if (unlikely(rp->ring == NULL)) {
-    printk(KERN_ERR "testDriver: ring buffer uninitialized!\n");
+    printk(KERN_ERR "mcpPciDriver: ring buffer uninitialized!\n");
     return;
   }
   for (i=0;i<rp->depth;i++) {
     DEBUG("testD_dmarb_deleteRing: freeing ring buffer %d\n", i);
-    testDriver_dma_finish(&rp->ring[i].dma);
+    mcpPciDriver_dma_finish(&rp->ring[i].dma);
     if (rp->ring[i].dma.dma_buffer)
       vfree(rp->ring[i].dma.dma_buffer);
   }
@@ -83,7 +83,7 @@ struct tD_ringbuf *testD_dmarb_getAvailableBuffer(struct tD_ring *rp) {
   int i;
   
   if (unlikely(rp->ring == NULL)) {
-    printk(KERN_ERR "testDriver: ring buffer uninitialized!\n");
+    printk(KERN_ERR "mcpPciDriver: ring buffer uninitialized!\n");
     return NULL;
   }
   i = rp->first;
@@ -94,7 +94,7 @@ struct tD_ringbuf *testD_dmarb_getAvailableBuffer(struct tD_ring *rp) {
   } while (i != rp->first);
   if (i == rp->first && rp->ring[i].active) {
     // ring buffer full
-    printk(KERN_WARNING "testDriver: ring buffer overflow, lost data\n");
+    printk(KERN_WARNING "mcpPciDriver: ring buffer overflow, lost data\n");
     rp->first = TD_RING_NEXT(rp, rp->first);
     rp->ring[i].active = 0;
   }
@@ -106,10 +106,10 @@ void testD_dmarb_setBufferFull(struct tD_ringbuf *buf) {
 }
 
 struct tD_ringbuf *testD_dmarb_getFirstBuffer(struct tD_ring *rp) {
-  DEBUG("testDriver: providing buffer %d (active: %d)\n",
+  DEBUG("mcpPciDriver: providing buffer %d (active: %d)\n",
 	rp->first, rp->ring[rp->first].active);
   if (unlikely(rp->ring == NULL)) {
-    printk(KERN_ERR "testDriver: ring buffer uninitialized!\n");
+    printk(KERN_ERR "mcpPciDriver: ring buffer uninitialized!\n");
     return NULL;
   }
   return &rp->ring[rp->first];
@@ -129,10 +129,10 @@ int testD_dmarb_fastRingEmpty(struct tD_ring *rp) {
 }
 
 /*
-void testDriver_takeFromRing(struct tD_ring *rp,
+void mcpPciDriver_takeFromRing(struct tD_ring *rp,
 			     struct tD_ringbuf *buf) {
   if (unlikely(rp->ring == NULL)) {
-    printk(KERN_ERR "testDriver: ring buffer uninitialized!\n");
+    printk(KERN_ERR "mcpPciDriver: ring buffer uninitialized!\n");
     buf->active = 0;
     return;
   }
@@ -153,13 +153,13 @@ void testDriver_takeFromRing(struct tD_ring *rp,
 //
 // The ring should be locked when this function is called.
 //
-void testDriver_addToRing(struct tD_ring *rp, 
+void mcpPciDriver_addToRing(struct tD_ring *rp, 
 			  unsigned int *buffer, 
 			  unsigned int size) {
   int i;
   
   if (unlikely(rp->ring == NULL)) {
-    printk(KERN_ERR "testDriver: ring buffer uninitialized!\n");
+    printk(KERN_ERR "mcpPciDriver: ring buffer uninitialized!\n");
     vfree(buffer);
     return;
   }

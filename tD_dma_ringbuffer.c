@@ -33,12 +33,12 @@ int tD_dmarb_initRing(struct tD_ring *rp,
   return 0;
 }
 
-void testDriver_deleteRing(struct tD_ring *rp) {
+void mcpPciDriver_deleteRing(struct tD_ring *rp) {
   unsigned long flags;
   int i;
 
   if (unlikely(rp->ring == NULL)) {
-    printk(KERN_ERR "testDriver: ring buffer uninitialized!\n");
+    printk(KERN_ERR "mcpPciDriver: ring buffer uninitialized!\n");
     return;
   }
   spin_lock_irqsave(&rp->lock, flags);
@@ -57,10 +57,10 @@ void testDriver_deleteRing(struct tD_ring *rp) {
 //
 // The ring should be locked when this function is called.
 // 
-void testDriver_takeFromRing(struct tD_ring *rp,
+void mcpPciDriver_takeFromRing(struct tD_ring *rp,
 			     struct tD_ringbuf *buf) {
   if (unlikely(rp->ring == NULL)) {
-    printk(KERN_ERR "testDriver: ring buffer uninitialized!\n");
+    printk(KERN_ERR "mcpPciDriver: ring buffer uninitialized!\n");
     buf->active = 0;
     return;
   }
@@ -73,7 +73,7 @@ void testDriver_takeFromRing(struct tD_ring *rp,
   }
 }
 
-int testDriver_fastRingEmpty(struct tD_ring *rp) {
+int mcpPciDriver_fastRingEmpty(struct tD_ring *rp) {
   return (rp->ring[rp->first].active == 0);
 }
   
@@ -84,13 +84,13 @@ int testDriver_fastRingEmpty(struct tD_ring *rp) {
 //
 // The ring should be locked when this function is called.
 //
-void testDriver_addToRing(struct tD_ring *rp, 
+void mcpPciDriver_addToRing(struct tD_ring *rp, 
 			  unsigned int *buffer, 
 			  unsigned int size) {
   int i;
   
   if (unlikely(rp->ring == NULL)) {
-    printk(KERN_ERR "testDriver: ring buffer uninitialized!\n");
+    printk(KERN_ERR "mcpPciDriver: ring buffer uninitialized!\n");
     vfree(buffer);
     return;
   }

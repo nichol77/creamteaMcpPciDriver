@@ -2,8 +2,8 @@
 # kernel build system and can use its language.
 
 ifneq ($(KERNELRELEASE),)
-	obj-m := testDriver.o
-	testDriver-objs := testD_main.o testD_char.o testD_irq.o testD_dma_ringbuffer.o testD_dma.o blk_functions.o
+	obj-m := mcpPciDriver.o
+	mcpPciDriver-objs := testD_main.o testD_char.o testD_irq.o testD_dma_ringbuffer.o testD_dma.o blk_functions.o
 
 # Otherwise we were called directly from the command
 # line; invoke the kernel build system.
