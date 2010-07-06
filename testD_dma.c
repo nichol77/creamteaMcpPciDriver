@@ -13,7 +13,8 @@ unsigned int mcpPciDriver_dma_calc_segments(struct tD_dma *dma);
 void mcpPciDriver_dma_unmap(struct pci_dev *dev, struct tD_dma *dma)
 {
   if (dma->dma_sglist_buffer) {
-    DEBUG("mcpPciDriver_dma_unmap: freeing dma_sglist_buffer: %8.8X\n",
+    DEBUG("mcpPciDriver_dma_unmap: unamppiing dma_sglist_buffer: %8.8X\n",
+	  dma->dma_sglist_buffer);
     dma_unmap_single(&dev->dev,
 		     dma->dma_address,
 		     dma->n_dma_segments*(sizeof(unsigned int)*2),
