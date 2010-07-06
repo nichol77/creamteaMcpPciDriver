@@ -138,7 +138,7 @@ irqreturn_t mcpPciDriver_interruptHandler(unsigned int irq,
   writel(val, intcsr);
   // Handle interrupt
   if (val & TEST_INTCSR_IRQ0) {
-    //    DEBUG("mcpPciDriver: local IRQ0\n");
+    DEBUG("mcpPciDriver: local IRQ0\n");
     //dt = get_cycles();
     //    DEBUG("mcpPciDriver: %llu cycles\n", dt-cc);
     //cc = dt;
