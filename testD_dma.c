@@ -12,7 +12,7 @@ unsigned int mcpPciDriver_dma_calc_segments(struct tD_dma *dma);
 
 void mcpPciDriver_dma_unmap(struct pci_dev *dev, struct tD_dma *dma)
 {
-  DEBUG("mcpPciDriver_dma_unmap: dev %#x dma %#",dev,dma);
+  DEBUG("mcpPciDriver_dma_unmap: dev %#x dma %#x\n",dev,dma);
   if (dma->dma_sglist_buffer) {
     DEBUG("mcpPciDriver_dma_unmap: unamppiing dma_sglist_buffer: %8.8X\n",
 	  dma->dma_sglist_buffer);
@@ -33,7 +33,7 @@ void mcpPciDriver_dma_unmap(struct pci_dev *dev, struct tD_dma *dma)
 
 void mcpPciDriver_dma_finish(struct tD_dma *dma)
 {
-  DEBUG("mcpPciDriver_dma_finish: dma %#",dma);
+  DEBUG("mcpPciDriver_dma_finish: dma %#x\n",dma);
   if (dma->dma_sglist_buffer) {
     DEBUG("mcpPciDriver_dma_finish: freeing dma_sglist_buffer: %8.8X\n",
 	  (unsigned int) dma->dma_sglist_buffer);
@@ -50,7 +50,7 @@ void mcpPciDriver_dma_finish(struct tD_dma *dma)
 
 int mcpPciDriver_dma_init(struct tD_dma *dma) 
 {
-  DEBUG("mcpPciDriver_dma_init: dma %#",dma);
+  DEBUG("mcpPciDriver_dma_init: dma %#x\n",dma);
   unsigned int n_pages;
   unsigned int cur_page;
   unsigned int next_page;
@@ -123,7 +123,7 @@ int mcpPciDriver_dma_init(struct tD_dma *dma)
 }
 
 int mcpPciDriver_dma_map(struct pci_dev *dev, struct tD_dma *dma) {
-  DEBUG("mcpPciDriver_dma_map: dev %#x dma %#",dev,dma);
+  DEBUG("mcpPciDriver_dma_map: dev %#x dma %#x\n",dev,dma);
   unsigned int *p;
   unsigned int lenflags;
   unsigned int sgaddr;
