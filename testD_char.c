@@ -22,7 +22,7 @@
 #include "mcpPciDriver.h"
 #include "mcp_register_map.h"
 
-#define VERBOSE_DEBUG 0
+#define VERBOSE_DEBUG 1
 
 static int mcpPciDriver_major;
 
