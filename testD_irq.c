@@ -130,10 +130,12 @@ irqreturn_t mcpPciDriver_interruptHandler(unsigned int irq,
   DEBUG("testD_irq.c: mcpPciDriver_interruptHandler called!\n"); //Kurtis
 
   val = readl(intcsr);
+  //  DEBUG("testD_irq.c: irq %d intcsr %#x val %#x\n",irq,intcsr,val);
   if (!(val & TEST_INTCSR_ACTIVE)) {
+    DEBUG("testD_irq: returning IRQ_NONE\n");
     return IRQ_NONE;
   }
-  // Clear all interrupts.
+  // Clear all interrupts. 
   DEBUG("testD_irq.c: interrupt cleared in mcpPciDriver_interruptHandler\n"); //Kurtis
   writel(val, intcsr);
   // Handle interrupt
@@ -163,6 +165,7 @@ irqreturn_t mcpPciDriver_interruptHandler(unsigned int irq,
     DEBUG("mcpPciDriver: local IRQ1\n");
 
     // Unmap the buffer.
+    DEBUG("mcpPciDriver: would cal mcpPciDriver_dma_unmap here\n");
     mcpPciDriver_dma_unmap(devp->dev, &devp->dmaringbuf->dma);
     dma_status = readl(dmasr);
     if (dma_status & 0xF) {
@@ -172,7 +175,7 @@ irqreturn_t mcpPciDriver_interruptHandler(unsigned int irq,
     } else {
       // dma transfer completed successfully
       // spinlock
-      spin_lock_irq(&devp->ring.lock);      
+      spin_lock_irq(&devp->ring.lock);
       devp->dmaringbuf->size = (devp->dmaringbuf->dma.dma_size)*sizeof(int);
       testD_dmarb_setBufferFull(devp->dmaringbuf);
       spin_unlock_irq(&devp->ring.lock);
@@ -181,7 +184,7 @@ irqreturn_t mcpPciDriver_interruptHandler(unsigned int irq,
       wake_up_interruptible(&devp->waiting_on_read);
     }
   }
-  if (val & TEST_INTCSR_IRQ2) {
+  if (val & TEST_INTCSR_IRQ2) { 
     volatile unsigned int *dmasr = (unsigned int *) 
       devp->pciBase[1] + TEST_DMASR;
     volatile unsigned int *dmaadr = (unsigned int *)
@@ -209,12 +212,12 @@ irqreturn_t mcpPciDriver_interruptHandler(unsigned int irq,
       nb_tx = readl(txlen);
 
       // Get DMA ringbuffer
-      spin_lock_irq(&devp->ring.lock);      
+      spin_lock_irq(&devp->ring.lock);
       DEBUG("testD_irq.c: Trying to fill buffer!\n"); //Kurtis
       devp->dmaringbuf = testD_dmarb_getAvailableBuffer(&devp->ring);
       spin_unlock_irq(&devp->ring.lock);
       if (!devp->dmaringbuf) {
-	printk(KERN_ERR 
+	printk(KERN_ERR
 	       "mcpPciDriver: testD_dmarb_getAvailableBuffer returned NULL!");
       } else {
 	DEBUG("mcpPciDriver: DMA of %d words requested\n", nb_tx);
@@ -227,13 +230,14 @@ irqreturn_t mcpPciDriver_interruptHandler(unsigned int irq,
 
 	// Map the DMA buffer...
 	mcpPciDriver_dma_map(devp->dev, &devp->dmaringbuf->dma);
-	DEBUG("mcpPciDriver: dma_address is 0x%X\n", 
+	DEBUG("mcpPciDriver: dma_address is 0x%X\n",
 	      devp->dmaringbuf->dma.dma_address);
 	writel(devp->dmaringbuf->dma.dma_address, dmaadr);
 	writel(devp->dmaringbuf->dma.dma_size, dmalen);
 	// bit 0 starts, bit 1 aborts
 	writel(1, dmastart);
       }
+
     }
   }
  if (val & TEST_INTCSR_IRQ3) {

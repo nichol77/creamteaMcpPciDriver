@@ -54,4 +54,4 @@ void mcpPciDriver_unregisterInterrupt(struct mcpPciDriver_dev *devp);
  * DEBUG...
  */
 //#define DEBUG(format, ...)
-#define DEBUG(format, ...) printk(KERN_INFO format, ## __VA_ARGS__)
+#define DEBUG(format, ...) printk(KERN_ERR format, ## __VA_ARGS__)

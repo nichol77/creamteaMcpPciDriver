@@ -136,8 +136,8 @@ static ssize_t mcpPciDriver_read(struct file *filp, char __user *buff,
 			size_t count, loff_t *offp) {
   struct mcpPciDriver_dev *devp = filp->private_data;
   struct tD_ringbuf curbuf;
-  struct tD_ringbuf *rbuf;
-  struct tD_dma dma;
+  struct tD_ringbuf *rbuf;  
+  struct tD_dma rep_dma;
   unsigned long flags;
   unsigned int nbytes;
   unsigned int *p;
@@ -172,13 +172,13 @@ static ssize_t mcpPciDriver_read(struct file *filp, char __user *buff,
   // OK, at this point if we're O_NONBLOCK
   // we should have data. So it's worth allocating the buffer.
   DEBUG("mcpPciDriver: about to allocate %d using vmalloc_32\n",devp->dmabuf_size);
-  dma.dma_buffer = vmalloc_32(devp->dmabuf_size);
-  dma.buf_size = devp->dmabuf_size;
-  if (!dma.dma_buffer) {
+  rep_dma.dma_buffer = vmalloc_32(devp->dmabuf_size);
+  rep_dma.buf_size = devp->dmabuf_size;
+  if (!rep_dma.dma_buffer) {
     printk(KERN_ERR "mcpPciDriver: unable to allocate replacement DMA buffer\n");
     return -ENOMEM;
   }
-  if (mcpPciDriver_dma_init(&dma)) {
+  if (mcpPciDriver_dma_init(&rep_dma)) {
     printk(KERN_ERR "mcpPciDriver: error initializing replacement DMA buffer\n");
     return -ENOMEM;
   }
@@ -191,8 +191,8 @@ static ssize_t mcpPciDriver_read(struct file *filp, char __user *buff,
     spin_unlock_irqrestore(&devp->ring.lock, flags);
     up(&devp->sema);
     if (filp->f_flags & O_NONBLOCK) {
-      mcpPciDriver_dma_finish(&dma);
-      vfree(dma.dma_buffer);
+      mcpPciDriver_dma_finish(&rep_dma);
+      vfree(rep_dma.dma_buffer);
       if (VERBOSE_DEBUG)
         DEBUG("Returning EAGAIN on line 189\n");
       return -EAGAIN;
@@ -200,21 +200,21 @@ static ssize_t mcpPciDriver_read(struct file *filp, char __user *buff,
     DEBUG("mcpPciDriver: sleeping\n");
     if (wait_event_interruptible(devp->waiting_on_read, 
 				 !testD_dmarb_fastRingEmpty(&devp->ring))) {
-      mcpPciDriver_dma_finish(&dma);
-      vfree(dma.dma_buffer);
+      mcpPciDriver_dma_finish(&rep_dma);
+      vfree(rep_dma.dma_buffer);
       return -ERESTARTSYS;
     }
     if (filp->f_flags & O_NONBLOCK) {
       if (down_trylock(&devp->sema)) {
-	mcpPciDriver_dma_finish(&dma);
-	vfree(dma.dma_buffer);
+	mcpPciDriver_dma_finish(&rep_dma);
+	vfree(rep_dma.dma_buffer);
         if (VERBOSE_DEBUG)
        	  DEBUG("Returning EAGAIN on line 203\n");
 	return -EAGAIN;
       }
     } else if (down_interruptible(&devp->sema)) {
-      mcpPciDriver_dma_finish(&dma);
-      vfree(dma.dma_buffer);
+      mcpPciDriver_dma_finish(&rep_dma);
+      vfree(rep_dma.dma_buffer);
       return -ERESTARTSYS;
     }
     spin_lock_irqsave(&devp->ring.lock, flags);
@@ -224,7 +224,7 @@ static ssize_t mcpPciDriver_read(struct file *filp, char __user *buff,
   // will vfree it.
   curbuf = *rbuf;
   testD_dmarb_setBufferEmpty(&devp->ring,
-			     &dma);
+			     &rep_dma);
   // Unlock. At this point we're done with the ring: we only lock the ring
   // to make sure between when we get the buffer and when we replace it, no
   // one else tries to access it.
