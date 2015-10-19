@@ -171,7 +171,7 @@ static ssize_t mcpPciDriver_read(struct file *filp, char __user *buff,
 
   // OK, at this point if we're O_NONBLOCK
   // we should have data. So it's worth allocating the buffer.
-  DEBUG("mcpPciDriver: about to allocate %d using vmalloc_32\n",devp->dmabuf_size);
+  DEBUG("mcpPciDriver: about to allocate %d (compare to %d) using vmalloc_32\n",devp->dmabuf_size,PAGE_ALIGN(150000*sizeof(int)));
   rep_dma.dma_buffer = vmalloc_32(devp->dmabuf_size);
   rep_dma.buf_size = devp->dmabuf_size;
   if (!rep_dma.dma_buffer) {
